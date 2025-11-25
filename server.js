@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const RouterOSClient = require('routeros-client').RouterOSClient;
+const RouterOSAPI = require('routeros').RouterOSAPI;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,22 +27,23 @@ app.post('/api/mikrotik', async (req, res) => {
     });
   }
 
-  const client = new RouterOSClient({
+  const conn = new RouterOSAPI({
     host: host,
     user: username,
     password: password,
     port: parseInt(port) || 8728,
-    timeout: 10000
+    timeout: 10
   });
 
   try {
     console.log(`[INFO] Connecting to ${host}:${port || 8728}...`);
     
-    await client.connect();
+    await conn.connect();
     
-    const result = await client.menu(command || '/system/resource').getAll();
+    // Execute command - default is system resource print
+    const result = await conn.write(command || '/system/resource/print');
     
-    await client.close();
+    await conn.close();
     
     console.log('[SUCCESS] Data retrieved successfully');
     
@@ -63,7 +64,7 @@ app.post('/api/mikrotik', async (req, res) => {
     
     // Close connection if still open
     try {
-      await client.close();
+      await conn.close();
     } catch (e) {}
     
     res.status(500).json({ 
