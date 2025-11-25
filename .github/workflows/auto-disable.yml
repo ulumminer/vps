@@ -1,31 +1,28 @@
 name: Auto Disable PPP Secret
 
-# Jadwal: Setiap tanggal 11 jam 02:00 WIB (19:00 UTC tanggal 10)
 on:
   schedule:
-    - cron: '0 19 10 * *'  # 19:00 UTC tanggal 10 = 02:00 WIB tanggal 11
-  
-  # Bisa trigger manual dari GitHub Actions tab
-  workflow_dispatch:
+    - cron: '0 19 10 * *'  # Jam 02:00 WIB tanggal 11 = 19:00 UTC tanggal 10
+  workflow_dispatch:  # Manual trigger untuk testing
 
 jobs:
   auto-disable:
-    name: Disable PPP Secrets
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20.x'  # ✅ Pakai Node 20
+          cache: 'npm'
       
-      - name: 📦 Install Dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
       
-      - name: 🚀 Run Auto-Disable Script
+      - name: Run auto-disable script
         env:
           MIKROTIK_HOST: ${{ secrets.MIKROTIK_HOST }}
           MIKROTIK_PORT: ${{ secrets.MIKROTIK_PORT }}
@@ -33,6 +30,16 @@ jobs:
           MIKROTIK_PASS: ${{ secrets.MIKROTIK_PASS }}
           API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
         run: npm run cron
-      
-      - name: ✅ Job Complete
-        run: echo "Auto-disable process completed successfully!"
+```
+
+### **3. Set GitHub Secrets**
+Di repository GitHub Anda, tambahkan secrets berikut:
+- Settings → Secrets and variables → Actions → New repository secret
+
+**Secrets yang perlu ditambahkan:**
+```
+MIKROTIK_HOST = idn5.tunnel.id
+MIKROTIK_PORT = 140
+MIKROTIK_USER = admin
+MIKROTIK_PASS = [password-mikrotik-anda]
+API_ENDPOINT = https://vps-md80.onrender.com/api/mikrotik
