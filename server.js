@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const RouterOSAPI = require('node-routeros').RouterOSAPI;
+const RouterOSClient = require('routeros-client').RouterOSClient;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,21 +27,23 @@ app.post('/api/mikrotik', async (req, res) => {
     });
   }
 
-  const api = new RouterOSAPI({
+  const client = new RouterOSClient({
     host: host,
     user: username,
     password: password,
     port: parseInt(port) || 8728,
-    timeout: 10
+    timeout: 10000
   });
 
   try {
-    console.log(`[INFO] Connecting to ${host}:${port}...`);
-    await api.connect();
+    console.log(`[INFO] Connecting to ${host}:${port || 8728}...`);
     
-    const result = await api.write(command || '/system/resource/print');
+    await client.connect();
     
-    await api.disconnect();
+    const result = await client.menu(command || '/system/resource').getAll();
+    
+    await client.close();
+    
     console.log('[SUCCESS] Data retrieved successfully');
     
     if (result && result.length > 0) {
@@ -58,8 +60,15 @@ app.post('/api/mikrotik', async (req, res) => {
     
   } catch (error) {
     console.error('[ERROR]', error.message);
+    
+    // Close connection if still open
+    try {
+      await client.close();
+    } catch (e) {}
+    
     res.status(500).json({ 
-      error: error.message || 'Gagal terhubung ke MikroTik' 
+      error: error.message || 'Gagal terhubung ke MikroTik',
+      details: 'Pastikan IP, username, password benar dan API service aktif di MikroTik'
     });
   }
 });
